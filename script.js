@@ -2,150 +2,105 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebas
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInAnonymously, signOut } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
-const firebaseConfig = {
-    apiKey: "AIzaSyATEgv8QAqp8Nqnw3m8pjVBedZf7govrmc",
-    authDomain: "smuchat.firebaseapp.com",
-    projectId: "smuchat",
-    storageBucket: "smuchat.firebasestorage.app",
-    messagingSenderId: "851151186986",
-    appId: "1:851151186986:web:a8192113d1aa7c2b062753"
-};
-
+const firebaseConfig = { apiKey: "YOUR_KEY", authDomain: "smuchat.firebaseapp.com", projectId: "smuchat", storageBucket: "smuchat.firebasestorage.app", messagingSenderId: "851151186986", appId: "1:851151186986:web:a8192113d1aa7c2b062753" };
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 
-let isSignUpMode = false;
-let currentUserData = null;
-let activeChatId = null;
+let isSignUpMode = false, currentUserData = null, activeChatId = null, targetFriend = null;
 
-// --- ১. অথেন্টিকেশন লজিক ---
+// অথেন্টিকেশন ট্র্যাকার
 onAuthStateChanged(auth, async (user) => {
     if (user) {
+        await setupUser(user);
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('chat-app').style.display = 'flex';
-        await setupUser(user);
-        loadFriendList(); // বন্ধুরা লোড হবে
+        loadFriendList();
     } else {
         document.getElementById('login-screen').style.display = 'flex';
         document.getElementById('chat-app').style.display = 'none';
     }
 });
 
-// ট্যাব পাল্টানো (Login vs Signup)
-document.getElementById('tab-signup').onclick = () => { isSignUpMode = true; updateAuthUI('tab-signup', 'Sign Up'); };
-document.getElementById('tab-login').onclick = () => { isSignUpMode = false; updateAuthUI('tab-login', 'Login'); };
+// লগইন/সাইন-আপ সুইচ
+document.getElementById('tab-signup').onclick = () => { isSignUpMode = true; document.getElementById('tab-bg').style.left = '50%'; document.getElementById('main-auth-btn').innerText = "Create Account"; };
+document.getElementById('tab-login').onclick = () => { isSignUpMode = false; document.getElementById('tab-bg').style.left = '5px'; document.getElementById('main-auth-btn').innerText = "Login"; };
 
-function updateAuthUI(tab, btnText) {
-    document.querySelectorAll('.auth-tabs button').forEach(b => b.classList.remove('active'));
-    document.getElementById(tab).classList.add('active');
-    document.getElementById('main-auth-btn').innerText = btnText;
-}
-
-// লগইন/রেজিস্ট্রেশন বাটন
 document.getElementById('main-auth-btn').onclick = async () => {
-    const email = document.getElementById('auth-email').value;
-    const pass = document.getElementById('auth-pass').value;
-    try {
-        if (isSignUpMode) await createUserWithEmailAndPassword(auth, email, pass);
-        else await signInWithEmailAndPassword(auth, email, pass);
-    } catch (e) { alert(e.message); }
+    const e = document.getElementById('auth-email').value.trim(), p = document.getElementById('auth-pass').value.trim();
+    try { isSignUpMode ? await createUserWithEmailAndPassword(auth, e, p) : await signInWithEmailAndPassword(auth, e, p); } catch (err) { alert(err.message); }
 };
 
 document.getElementById('google-login-btn').onclick = () => signInWithPopup(auth, provider);
-document.getElementById('guest-login-btn').onclick = async () => {
-    const name = document.getElementById('guest-name').value || "Guest";
-    const res = await signInAnonymously(auth);
-    await setupUser({ ...res.user, displayName: name });
-};
+document.getElementById('guest-quick-btn').onclick = async () => { const n = prompt("Display Name:"); if(n) await setupUser({...(await signInAnonymously(auth)).user, displayName: n}); };
 document.getElementById('logout-btn').onclick = () => signOut(auth);
 
-// --- ২. ইউজার প্রোফাইল সেটআপ ---
+// প্রোফাইল সেটআপ
 async function setupUser(user) {
-    const name = user.displayName || "Anonymous";
-    const customId = name.split(' ')[0].toLowerCase() + user.uid.substring(0, 4);
-    currentUserData = { uid: user.uid, id: customId, name: name };
-
-    document.getElementById('display-name').innerText = name;
-    document.getElementById('my-unique-id').innerText = "ID: #" + customId;
-    document.getElementById('my-avatar').src = user.photoURL || `https://ui-avatars.com/api/?name=${name}&background=random`;
-
-    await setDoc(doc(db, "users", customId), {
-        uid: user.uid, id: customId, name: name, photo: document.getElementById('my-avatar').src
-    }, { merge: true });
+    const mRef = doc(db, "users_meta", user.uid);
+    const mDoc = await getDoc(mRef);
+    let cId = mDoc.exists() ? mDoc.data().id : (user.displayName || "user").split(' ')[0].toLowerCase() + Math.floor(1000 + Math.random()*9000);
+    if(!mDoc.exists()) await setDoc(mRef, {id: cId});
+    
+    const uRef = doc(db, "users", cId);
+    const uDoc = await getDoc(uRef);
+    currentUserData = uDoc.exists() ? uDoc.data() : { id: cId, uid: user.uid, name: user.displayName || "Guest", photo: user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName}&background=random` };
+    
+    document.getElementById('display-name').innerText = currentUserData.name;
+    document.getElementById('my-unique-id').innerText = "#" + cId;
+    document.getElementById('my-avatar').src = currentUserData.photo;
+    await setDoc(uRef, currentUserData, {merge: true});
 }
 
-// --- ৩. ফ্রেন্ডশিপ সিস্টেম (Add Friend) ---
+// ফ্রেন্ড লিস্ট ও চ্যাট
 document.getElementById('add-friend-btn').onclick = async () => {
     const fId = document.getElementById('friend-id-input').value.trim();
-    if (!fId || fId === currentUserData.id) return;
-
-    const friendDoc = await getDoc(doc(db, "users", fId));
-    if (friendDoc.exists()) {
-        const friendData = friendDoc.data();
-        // নিজের লিস্টে বন্ধুকে সেভ করা
-        await setDoc(doc(db, "users", currentUserData.id, "friends", fId), {
-            id: fId, name: friendData.name, photo: friendData.photo, addedAt: serverTimestamp()
-        });
-        // বন্ধুর লিস্টে নিজেকে সেভ করা
-        await setDoc(doc(db, "users", fId, "friends", currentUserData.id), {
-            id: currentUserData.id, name: currentUserData.name, photo: document.getElementById('my-avatar').src, addedAt: serverTimestamp()
-        });
-        alert(friendData.name + " added to your friend list!");
+    const fDoc = await getDoc(doc(db, "users", fId));
+    if(fDoc.exists()) {
+        await setDoc(doc(db, "users", currentUserData.id, "friends", fId), {id: fId, name: fDoc.data().name, photo: fDoc.data().photo, addedAt: serverTimestamp()});
+        await setDoc(doc(db, "users", fId, "friends", currentUserData.id), {id: currentUserData.id, name: currentUserData.name, photo: currentUserData.photo, addedAt: serverTimestamp()});
         document.getElementById('friend-id-input').value = "";
-    } else {
-        alert("User ID not found!");
     }
 };
 
-// ফ্রেন্ড লিস্ট লোড করা
 function loadFriendList() {
-    const listUI = document.getElementById('friend-list');
-    const q = query(collection(db, "users", currentUserData.id, "friends"), orderBy("addedAt", "desc"));
-    
-    onSnapshot(q, (snap) => {
-        listUI.innerHTML = "";
-        if (snap.empty) listUI.innerHTML = '<p class="empty-list">No friends yet</p>';
+    onSnapshot(query(collection(db, "users", currentUserData.id, "friends"), orderBy("addedAt", "desc")), (snap) => {
+        const list = document.getElementById('friend-list'); list.innerHTML = "";
         snap.forEach(d => {
-            const f = d.data();
-            const div = document.createElement('div');
-            div.className = 'friend-item';
-            div.innerHTML = `
-                <img src="${f.photo}" class="friend-img">
-                <div class="friend-info"><b>${f.name}</b><small>#${f.id}</small></div>
-            `;
-            div.onclick = () => startChat(f.id, f.name);
-            listUI.appendChild(div);
+            const f = d.data(), display = f.nickname || f.name;
+            const div = document.createElement('div'); div.className = 'friend-item';
+            div.innerHTML = `<img src="${f.photo}"><div><b>${display}</b><small>#${f.id}</small></div><button class="edit-nick-btn" onclick="window.openNick(event,'${f.id}')">✏️</button>`;
+            div.onclick = () => startChat(f.id, display);
+            list.appendChild(div);
         });
     });
 }
 
-// --- ৪. চ্যাট লজিক ---
-function startChat(fId, fName) {
-    activeChatId = [currentUserData.id, fId].sort().join('_');
-    document.getElementById('chat-header').innerText = fName;
-    document.getElementById('msg-input').disabled = false;
-    document.getElementById('send-btn').disabled = false;
+window.openNick = (e, id) => { e.stopPropagation(); targetFriend = id; document.getElementById('nickname-modal').style.display = 'flex'; };
+document.getElementById('save-nickname').onclick = async () => {
+    await setDoc(doc(db, "users", currentUserData.id, "friends", targetFriend), {nickname: document.getElementById('new-nickname').value}, {merge: true});
+    document.getElementById('nickname-modal').style.display = 'none';
+};
 
-    const q = query(collection(db, "chats", activeChatId, "messages"), orderBy("timestamp", "asc"));
-    onSnapshot(q, (snap) => {
-        const area = document.getElementById('message-area');
-        area.innerHTML = "";
-        snap.forEach(d => {
-            const m = d.data();
-            const cls = m.sender === currentUserData.id ? 'sent' : 'received';
-            area.innerHTML += `<div class="msg ${cls}">${m.text}</div>`;
-        });
+function startChat(id, name) {
+    activeChatId = [currentUserData.id, id].sort().join('_');
+    document.getElementById('header-name').innerText = name;
+    document.getElementById('msg-input').disabled = false;
+    document.body.classList.add('chat-active'); // মোবাইল ভিউ টগল
+
+    onSnapshot(query(collection(db, "chats", activeChatId, "messages"), orderBy("timestamp", "asc")), (snap) => {
+        const area = document.getElementById('message-area'); area.innerHTML = "";
+        snap.forEach(d => { const m = d.data(); area.innerHTML += `<div class="msg ${m.sender === currentUserData.id ? 'sent' : 'received'}">${m.text}</div>`; });
         area.scrollTop = area.scrollHeight;
     });
 }
 
-document.getElementById('send-btn').onclick = async () => {
-    const input = document.getElementById('msg-input');
-    if (!input.value || !activeChatId) return;
-    await addDoc(collection(db, "chats", activeChatId, "messages"), {
-        text: input.value, sender: currentUserData.id, timestamp: serverTimestamp()
-    });
-    input.value = "";
+document.getElementById('mobile-back').onclick = () => document.body.classList.remove('chat-active');
+
+const msgInp = document.getElementById('msg-input'), sendBtn = document.getElementById('send-btn');
+msgInp.oninput = () => sendBtn.disabled = !msgInp.value.trim();
+sendBtn.onclick = async () => {
+    await addDoc(collection(db, "chats", activeChatId, "messages"), {text: msgInp.value, sender: currentUserData.id, timestamp: serverTimestamp()});
+    msgInp.value = ""; sendBtn.disabled = true;
 };
