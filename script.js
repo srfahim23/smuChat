@@ -20,28 +20,30 @@ let isSignUpMode = false;
 let currentUserData = null;
 let activeChatId = null;
 
-// --- AUTHENTICATION ---
+// --- ১. অথেন্টিকেশন লজিক ---
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('chat-app').style.display = 'flex';
         await setupUser(user);
+        loadFriendList(); // বন্ধুরা লোড হবে
     } else {
         document.getElementById('login-screen').style.display = 'flex';
         document.getElementById('chat-app').style.display = 'none';
     }
 });
 
-// Toggle Login/Signup
-document.getElementById('tab-signup').onclick = () => { isSignUpMode = true; document.getElementById('main-auth-btn').innerText = "Sign Up"; toggleTabs('tab-signup'); };
-document.getElementById('tab-login').onclick = () => { isSignUpMode = false; document.getElementById('main-auth-btn').innerText = "Login"; toggleTabs('tab-login'); };
+// ট্যাব পাল্টানো (Login vs Signup)
+document.getElementById('tab-signup').onclick = () => { isSignUpMode = true; updateAuthUI('tab-signup', 'Sign Up'); };
+document.getElementById('tab-login').onclick = () => { isSignUpMode = false; updateAuthUI('tab-login', 'Login'); };
 
-function toggleTabs(id) {
+function updateAuthUI(tab, btnText) {
     document.querySelectorAll('.auth-tabs button').forEach(b => b.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
+    document.getElementById(tab).classList.add('active');
+    document.getElementById('main-auth-btn').innerText = btnText;
 }
 
-// Email/Pass Auth
+// লগইন/রেজিস্ট্রেশন বাটন
 document.getElementById('main-auth-btn').onclick = async () => {
     const email = document.getElementById('auth-email').value;
     const pass = document.getElementById('auth-pass').value;
@@ -51,40 +53,78 @@ document.getElementById('main-auth-btn').onclick = async () => {
     } catch (e) { alert(e.message); }
 };
 
-// Google & Guest Auth
 document.getElementById('google-login-btn').onclick = () => signInWithPopup(auth, provider);
 document.getElementById('guest-login-btn').onclick = async () => {
-    const name = document.getElementById('guest-name').value || "Guest User";
+    const name = document.getElementById('guest-name').value || "Guest";
     const res = await signInAnonymously(auth);
     await setupUser({ ...res.user, displayName: name });
 };
-
 document.getElementById('logout-btn').onclick = () => signOut(auth);
 
-// --- USER SETUP ---
+// --- ২. ইউজার প্রোফাইল সেটআপ ---
 async function setupUser(user) {
-    const userId = user.displayName ? user.displayName.split(' ')[0].toLowerCase() + user.uid.substring(0, 4) : "user" + user.uid.substring(0, 4);
-    currentUserData = { uid: user.uid, id: userId, name: user.displayName || "Guest" };
+    const name = user.displayName || "Anonymous";
+    const customId = name.split(' ')[0].toLowerCase() + user.uid.substring(0, 4);
+    currentUserData = { uid: user.uid, id: customId, name: name };
 
-    document.getElementById('display-name').innerText = currentUserData.name;
-    document.getElementById('my-unique-id').innerText = "ID: #" + userId;
-    document.getElementById('my-avatar').src = user.photoURL || `https://ui-avatars.com/api/?name=${currentUserData.name}`;
+    document.getElementById('display-name').innerText = name;
+    document.getElementById('my-unique-id').innerText = "ID: #" + customId;
+    document.getElementById('my-avatar').src = user.photoURL || `https://ui-avatars.com/api/?name=${name}&background=random`;
 
-    await setDoc(doc(db, "users", userId), { uid: user.uid, name: currentUserData.name, photo: document.getElementById('my-avatar').src }, { merge: true });
+    await setDoc(doc(db, "users", customId), {
+        uid: user.uid, id: customId, name: name, photo: document.getElementById('my-avatar').src
+    }, { merge: true });
 }
 
-// --- CHAT LOGIC ---
+// --- ৩. ফ্রেন্ডশিপ সিস্টেম (Add Friend) ---
 document.getElementById('add-friend-btn').onclick = async () => {
     const fId = document.getElementById('friend-id-input').value.trim();
-    if (!fId) return;
-    const docSnap = await getDoc(doc(db, "users", fId));
-    if (docSnap.exists()) startChat(fId, docSnap.data().name);
-    else alert("User not found!");
+    if (!fId || fId === currentUserData.id) return;
+
+    const friendDoc = await getDoc(doc(db, "users", fId));
+    if (friendDoc.exists()) {
+        const friendData = friendDoc.data();
+        // নিজের লিস্টে বন্ধুকে সেভ করা
+        await setDoc(doc(db, "users", currentUserData.id, "friends", fId), {
+            id: fId, name: friendData.name, photo: friendData.photo, addedAt: serverTimestamp()
+        });
+        // বন্ধুর লিস্টে নিজেকে সেভ করা
+        await setDoc(doc(db, "users", fId, "friends", currentUserData.id), {
+            id: currentUserData.id, name: currentUserData.name, photo: document.getElementById('my-avatar').src, addedAt: serverTimestamp()
+        });
+        alert(friendData.name + " added to your friend list!");
+        document.getElementById('friend-id-input').value = "";
+    } else {
+        alert("User ID not found!");
+    }
 };
 
-function startChat(friendId, friendName) {
-    activeChatId = [currentUserData.id, friendId].sort().join('_');
-    document.getElementById('chat-header').innerText = "Chatting with: " + friendName;
+// ফ্রেন্ড লিস্ট লোড করা
+function loadFriendList() {
+    const listUI = document.getElementById('friend-list');
+    const q = query(collection(db, "users", currentUserData.id, "friends"), orderBy("addedAt", "desc"));
+    
+    onSnapshot(q, (snap) => {
+        listUI.innerHTML = "";
+        if (snap.empty) listUI.innerHTML = '<p class="empty-list">No friends yet</p>';
+        snap.forEach(d => {
+            const f = d.data();
+            const div = document.createElement('div');
+            div.className = 'friend-item';
+            div.innerHTML = `
+                <img src="${f.photo}" class="friend-img">
+                <div class="friend-info"><b>${f.name}</b><small>#${f.id}</small></div>
+            `;
+            div.onclick = () => startChat(f.id, f.name);
+            listUI.appendChild(div);
+        });
+    });
+}
+
+// --- ৪. চ্যাট লজিক ---
+function startChat(fId, fName) {
+    activeChatId = [currentUserData.id, fId].sort().join('_');
+    document.getElementById('chat-header').innerText = fName;
     document.getElementById('msg-input').disabled = false;
     document.getElementById('send-btn').disabled = false;
 
@@ -103,7 +143,7 @@ function startChat(friendId, friendName) {
 
 document.getElementById('send-btn').onclick = async () => {
     const input = document.getElementById('msg-input');
-    if (!input.value) return;
+    if (!input.value || !activeChatId) return;
     await addDoc(collection(db, "chats", activeChatId, "messages"), {
         text: input.value, sender: currentUserData.id, timestamp: serverTimestamp()
     });

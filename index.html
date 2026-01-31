@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmuChat | Private Messenger</title>
+    <title>SmuChat Pro | Premium Messenger</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -25,8 +25,8 @@
             <div class="divider"><span>OR</span></div>
             <button id="google-login-btn" class="glass-button google-btn">Continue with Google</button>
 
-            <div class="divider"><span>GUEST ACCESS</span></div>
-            <input type="text" id="guest-name" placeholder="Your Name">
+            <div class="divider"><span>QUICK ACCESS</span></div>
+            <input type="text" id="guest-name" placeholder="Guest Display Name">
             <button id="guest-login-btn" class="glass-button secondary">Join as Guest</button>
         </div>
     </div>
@@ -36,19 +36,21 @@
             <div class="glass-profile-header">
                 <img src="" id="my-avatar">
                 <div class="user-info">
-                    <b id="display-name">Loading...</b>
+                    <b id="display-name">...</b>
                     <small id="my-unique-id">ID: #----</small>
                 </div>
                 <button id="logout-btn" title="Logout">✕</button>
             </div>
             
             <div class="search-box">
-                <input type="text" id="friend-id-input" placeholder="Search by ID (e.g. name1234)">
-                <button id="add-friend-btn">Search</button>
+                <input type="text" id="friend-id-input" placeholder="Search Friend ID...">
+                <button id="add-friend-btn">Add</button>
             </div>
 
-            <div id="user-list" class="user-list">
-                </div>
+            <div class="contacts-label">MY FRIENDS</div>
+            <div id="friend-list" class="user-list">
+                <p class="empty-list">Search ID to add friends</p>
+            </div>
         </aside>
 
         <main class="chat-window">
