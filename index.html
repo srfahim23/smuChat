@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmuChat | Modern Private Messenger</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="login-screen" class="glass-login-container">
+        <div class="login-card">
+            <h2>SmuChat</h2>
+            <p>Experience private & modern conversations</p>
+            <button id="google-login-btn" class="glass-button">Sign in with Google</button>
+            <div class="divider">OR</div>
+            <div class="manual-login">
+                <input type="text" id="custom-username" placeholder="Choose a username">
+                <button id="guest-login-btn" class="glass-button secondary">Join as Guest</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="chat-app" class="glass-chat-container" style="display: none;">
+        <aside class="glass-sidebar">
+            <div class="glass-profile-header">
+                <img src="" id="my-avatar" alt="Avatar">
+                <div class="user-id-info">
+                    <span id="display-name">...</span>
+                    <small id="my-unique-id">ID: #----</small>
+                </div>
+            </div>
+            <div class="glass-search-bar">
+                <input type="text" id="friend-id-input" placeholder="Enter Friend's ID (e.g. abir1234)">
+                <button id="add-friend-btn">Search</button>
+            </div>
+            <div class="glass-user-list" id="user-list">
+                <p class="empty-msg">No active conversations</p>
+            </div>
+        </aside>
+
+        <main class="glass-chat-window">
+            <header class="glass-chat-header">
+                <h4 id="chat-with-name">Select a friend to chat</h4>
+            </header>
+            <div class="glass-message-area" id="message-area">
+                </div>
+            <div class="glass-input-area">
+                <input type="text" id="msg-input" placeholder="Type a message..." disabled>
+                <button id="send-btn" class="glass-button" disabled>Send</button>
+            </div>
+        </main>
+    </div>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>
