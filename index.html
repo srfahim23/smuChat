@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmuChat | Modern Private Messenger</title>
+    <title>SmuChat | Private Messenger</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -11,43 +11,52 @@
     <div id="login-screen" class="glass-login-container">
         <div class="login-card">
             <h2>SmuChat</h2>
-            <p>Experience private & modern conversations</p>
-            <button id="google-login-btn" class="glass-button">Sign in with Google</button>
-            <div class="divider">OR</div>
-            <div class="manual-login">
-                <input type="text" id="custom-username" placeholder="Choose a username">
-                <button id="guest-login-btn" class="glass-button secondary">Join as Guest</button>
+            <div class="auth-tabs">
+                <button id="tab-login" class="active">Login</button>
+                <button id="tab-signup">Sign Up</button>
             </div>
+
+            <div id="auth-form" class="auth-inputs">
+                <input type="email" id="auth-email" placeholder="Email Address">
+                <input type="password" id="auth-pass" placeholder="Password">
+                <button id="main-auth-btn" class="glass-button">Login</button>
+            </div>
+
+            <div class="divider"><span>OR</span></div>
+            <button id="google-login-btn" class="glass-button google-btn">Continue with Google</button>
+
+            <div class="divider"><span>GUEST ACCESS</span></div>
+            <input type="text" id="guest-name" placeholder="Your Name">
+            <button id="guest-login-btn" class="glass-button secondary">Join as Guest</button>
         </div>
     </div>
 
     <div id="chat-app" class="glass-chat-container" style="display: none;">
         <aside class="glass-sidebar">
             <div class="glass-profile-header">
-                <img src="" id="my-avatar" alt="Avatar">
-                <div class="user-id-info">
-                    <span id="display-name">...</span>
+                <img src="" id="my-avatar">
+                <div class="user-info">
+                    <b id="display-name">Loading...</b>
                     <small id="my-unique-id">ID: #----</small>
                 </div>
+                <button id="logout-btn" title="Logout">✕</button>
             </div>
-            <div class="glass-search-bar">
-                <input type="text" id="friend-id-input" placeholder="Enter Friend's ID (e.g. abir1234)">
+            
+            <div class="search-box">
+                <input type="text" id="friend-id-input" placeholder="Search by ID (e.g. name1234)">
                 <button id="add-friend-btn">Search</button>
             </div>
-            <div class="glass-user-list" id="user-list">
-                <p class="empty-msg">No active conversations</p>
-            </div>
+
+            <div id="user-list" class="user-list">
+                </div>
         </aside>
 
-        <main class="glass-chat-window">
-            <header class="glass-chat-header">
-                <h4 id="chat-with-name">Select a friend to chat</h4>
-            </header>
-            <div class="glass-message-area" id="message-area">
-                </div>
-            <div class="glass-input-area">
-                <input type="text" id="msg-input" placeholder="Type a message..." disabled>
-                <button id="send-btn" class="glass-button" disabled>Send</button>
+        <main class="chat-window">
+            <header id="chat-header">Select a friend to start chatting</header>
+            <div id="message-area" class="message-area"></div>
+            <div class="input-area">
+                <input type="text" id="msg-input" placeholder="Type message..." disabled>
+                <button id="send-btn" disabled>Send</button>
             </div>
         </main>
     </div>
