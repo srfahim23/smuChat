@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>SmuChat Pro | Mobile First</title>
+    <title>SmuChat Pro | Unified</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -20,7 +20,7 @@
             <div class="auth-body">
                 <div class="input-field">
                     <input type="email" id="auth-email" placeholder=" " required>
-                    <label>Email Address</label>
+                    <label>Email</label>
                 </div>
                 <div class="input-field">
                     <input type="password" id="auth-pass" placeholder=" " required>
@@ -36,12 +36,11 @@
     </div>
 
     <div id="chat-app" class="app-shell" style="display: none;">
-        
         <button id="menu-toggle" class="fab-menu">☰</button>
 
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-top">
-                <div class="me-profile">
+                <div class="me-profile" id="my-profile-trigger">
                     <img src="" id="my-avatar">
                     <div class="me-info">
                         <span id="display-name">User</span>
@@ -51,7 +50,7 @@
                 <button id="close-sidebar" class="close-btn">✕</button>
             </div>
             <div class="action-bar">
-                <input type="text" id="friend-id-input" placeholder="Enter ID...">
+                <input type="text" id="friend-id-input" placeholder="Enter Friend ID...">
                 <button id="add-friend-btn">Add</button>
             </div>
             <div class="friend-scroller" id="friend-list"></div>
@@ -61,7 +60,7 @@
         <main class="chat-main">
             <header class="chat-nav">
                 <h2 id="header-name">SmuChat</h2>
-                <button id="open-settings">⚙️</button>
+                <button id="open-settings-btn" class="settings-btn">⚙️</button>
             </header>
             <div id="message-area" class="chat-body"></div>
             <footer class="chat-input-bar">
@@ -71,6 +70,29 @@
                 </div>
             </footer>
         </main>
+    </div>
+
+    <div id="profile-modal" class="modal">
+        <div class="modal-content">
+            <h3>Update Profile</h3>
+            <div class="input-field"><input type="text" id="edit-name" placeholder=" "><label>Full Name</label></div>
+            <div class="input-field"><input type="text" id="edit-photo" placeholder=" "><label>Photo URL</label></div>
+            <div class="modal-actions">
+                <button id="save-profile" class="submit-btn">Save Changes</button>
+                <button onclick="closeModal('profile-modal')" class="cancel-btn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="nickname-modal" class="modal">
+        <div class="modal-content">
+            <h3>Set Nickname</h3>
+            <div class="input-field"><input type="text" id="new-nickname" placeholder=" "><label>Nickname</label></div>
+            <div class="modal-actions">
+                <button id="save-nickname" class="submit-btn">Update</button>
+                <button onclick="closeModal('nickname-modal')" class="cancel-btn">Cancel</button>
+            </div>
+        </div>
     </div>
 
     <script type="module" src="script.js"></script>

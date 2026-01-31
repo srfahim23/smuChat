@@ -3,7 +3,7 @@ import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, creat
 import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
 const firebaseConfig = { 
-    apiKey: "AIzaSyATEgv8QAqp8Nqnw3m8pjVBedZf7govrmc", // আপনার আসল কী বসান
+    apiKey: "AIzaSyATEgv8QAqp8Nqnw3m8pjVBedZf7govrmc", 
     authDomain: "smuchat.firebaseapp.com",
     projectId: "smuchat",
     storageBucket: "smuchat.firebasestorage.app",
@@ -16,28 +16,23 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 
-let isSignUpMode = false, currentUserData = null, activeChatId = null;
+let isSignUpMode = false, currentUserData = null, activeChatId = null, targetFriendId = null;
 
-// --- মোবাইল নেভিগেশন ---
-const body = document.body;
-document.getElementById('menu-toggle').onclick = () => body.classList.add('sidebar-open');
-document.getElementById('close-sidebar').onclick = () => body.classList.remove('sidebar-open');
-
-// --- ট্যাব সুইচ ---
-document.getElementById('tab-signup').onclick = () => { 
-    isSignUpMode = true; 
-    document.getElementById('tab-bg').style.left = 'calc(50% - 4px)';
-    document.getElementById('tab-signup').classList.add('active');
-    document.getElementById('tab-login').classList.remove('active');
+// --- ১. কিবোর্ড এন্টার সাপোর্ট ---
+const setupEnterKey = (inputId, btnId) => {
+    document.getElementById(inputId).addEventListener('keydown', (e) => {
+        if(e.key === 'Enter') document.getElementById(btnId).click();
+    });
 };
-document.getElementById('tab-login').onclick = () => { 
-    isSignUpMode = false; 
-    document.getElementById('tab-bg').style.left = '4px';
-    document.getElementById('tab-login').classList.add('active');
-    document.getElementById('tab-signup').classList.remove('active');
-};
+setupEnterKey('auth-email', 'main-auth-btn');
+setupEnterKey('auth-pass', 'main-auth-btn');
+setupEnterKey('msg-input', 'send-btn');
 
-// --- অথেন্টিকেশন স্টেট ---
+// --- ২. সাইডবার নেভিগেশন ---
+document.getElementById('menu-toggle').onclick = () => document.body.classList.add('sidebar-open');
+document.getElementById('close-sidebar').onclick = () => document.body.classList.remove('sidebar-open');
+
+// --- ৩. অথেন্টিকেশন স্টেট ---
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         await setupUser(user);
@@ -50,13 +45,54 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
+// লগইন/সাইন-আপ লজিক
+document.getElementById('tab-signup').onclick = () => { 
+    isSignUpMode = true; 
+    document.getElementById('tab-bg').style.left = 'calc(50% - 4px)';
+    document.querySelector('#main-auth-btn').innerText = "Create Account";
+};
+document.getElementById('tab-login').onclick = () => { 
+    isSignUpMode = false; 
+    document.getElementById('tab-bg').style.left = '4px';
+    document.querySelector('#main-auth-btn').innerText = "Continue";
+};
+
 document.getElementById('main-auth-btn').onclick = async () => {
     const e = document.getElementById('auth-email').value.trim();
     const p = document.getElementById('auth-pass').value.trim();
+    if(!e || !p) return;
     try { isSignUpMode ? await createUserWithEmailAndPassword(auth, e, p) : await signInWithEmailAndPassword(auth, e, p); } 
     catch (err) { alert(err.message); }
 };
 
+// --- ৪. প্রোফাইল ও ডাকনাম (Nickname) লজিক ---
+document.getElementById('my-profile-trigger').onclick = () => {
+    document.getElementById('edit-name').value = currentUserData.name;
+    document.getElementById('edit-photo').value = currentUserData.photo;
+    document.getElementById('profile-modal').style.display = 'flex';
+};
+
+document.getElementById('save-profile').onclick = async () => {
+    const name = document.getElementById('edit-name').value;
+    const photo = document.getElementById('edit-photo').value;
+    await setDoc(doc(db, "users", currentUserData.id), { name, photo }, { merge: true });
+    location.reload(); 
+};
+
+window.openNickModal = (e, fId, currentNick) => {
+    e.stopPropagation();
+    targetFriendId = fId;
+    document.getElementById('new-nickname').value = currentNick;
+    document.getElementById('nickname-modal').style.display = 'flex';
+};
+
+document.getElementById('save-nickname').onclick = async () => {
+    const nick = document.getElementById('new-nickname').value;
+    await setDoc(doc(db, "users", currentUserData.id, "friends", targetFriendId), { nickname: nick }, { merge: true });
+    document.getElementById('nickname-modal').style.display = 'none';
+};
+
+// --- ৫. ফ্রেন্ডস ও চ্যাট ---
 async function setupUser(user) {
     const metaRef = doc(db, "users_meta", user.uid);
     const mDoc = await getDoc(metaRef);
@@ -73,26 +109,16 @@ async function setupUser(user) {
     await setDoc(uRef, currentUserData, {merge: true});
 }
 
-// চ্যাট এবং ফ্রেন্ডস লজিক
-document.getElementById('add-friend-btn').onclick = async () => {
-    const fId = document.getElementById('friend-id-input').value.trim();
-    const fDoc = await getDoc(doc(db, "users", fId));
-    if(fDoc.exists()) {
-        await setDoc(doc(db, "users", currentUserData.id, "friends", fId), {id: fId, name: fDoc.data().name, photo: fDoc.data().photo});
-        await setDoc(doc(db, "users", fId, "friends", currentUserData.id), {id: currentUserData.id, name: currentUserData.name, photo: currentUserData.photo});
-        alert("Friend Added!");
-    }
-};
-
 function loadFriends() {
     onSnapshot(collection(db, "users", currentUserData.id, "friends"), (snap) => {
         const list = document.getElementById('friend-list'); list.innerHTML = "";
         snap.forEach(d => {
             const f = d.data();
+            const display = f.nickname || f.name;
             const div = document.createElement('div');
-            div.style = "padding:12px; border-bottom:1px solid rgba(255,255,255,0.05); cursor:pointer; display:flex; align-items:center; gap:10px;";
-            div.innerHTML = `<img src="${f.photo}" style="width:35px; border-radius:50%"> <span>${f.name}</span>`;
-            div.onclick = () => startChat(f.id, f.name);
+            div.className = "friend-item";
+            div.innerHTML = `<img src="${f.photo}"><div><b>${display}</b><br><small>#${f.id}</small></div><span class="edit-nick-icon" onclick="openNickModal(event,'${f.id}','${f.nickname||''}')">✏️</span>`;
+            div.onclick = () => startChat(f.id, display);
             list.appendChild(div);
         });
     });
@@ -102,7 +128,7 @@ function startChat(id, name) {
     activeChatId = [currentUserData.id, id].sort().join('_');
     document.getElementById('header-name').innerText = name;
     document.getElementById('msg-input').disabled = false;
-    body.classList.remove('sidebar-open');
+    document.body.classList.remove('sidebar-open');
 
     onSnapshot(query(collection(db, "chats", activeChatId, "messages"), orderBy("timestamp", "asc")), (snap) => {
         const area = document.getElementById('message-area'); area.innerHTML = "";
@@ -117,7 +143,11 @@ function startChat(id, name) {
 const msgInp = document.getElementById('msg-input'), sendBtn = document.getElementById('send-btn');
 msgInp.oninput = () => sendBtn.disabled = !msgInp.value.trim();
 sendBtn.onclick = async () => {
-    await addDoc(collection(db, "chats", activeChatId, "messages"), {text: msgInp.value, sender: currentUserData.id, timestamp: serverTimestamp()});
-    msgInp.value = ""; sendBtn.disabled = true;
+    const text = msgInp.value;
+    msgInp.value = "";
+    await addDoc(collection(db, "chats", activeChatId, "messages"), {text, sender: currentUserData.id, timestamp: serverTimestamp()});
 };
+
+window.closeModal = (id) => document.getElementById(id).style.display = 'none';
 document.getElementById('logout-btn').onclick = () => signOut(auth);
+document.getElementById('google-login-btn').onclick = () => signInWithPopup(auth, provider);
