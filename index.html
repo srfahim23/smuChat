@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmuChat Pro | Next-Gen Messaging</title>
+    <title>SmuChat Pro | Premium Messaging</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="">
+<body>
 
     <div id="login-screen" class="glass-login-container">
         <div class="login-card">
@@ -15,12 +15,14 @@
                 <h2>SmuChat</h2>
                 <p>Private & Secure Messenger</p>
             </div>
+
             <div class="auth-tabs">
-                <div class="tab-indicator" id="tab-bg"></div>
+                <div id="tab-bg" class="tab-indicator"></div>
                 <button id="tab-login" class="active">Login</button>
                 <button id="tab-signup">Sign Up</button>
             </div>
-            <div id="auth-form" class="auth-inputs">
+
+            <div class="auth-inputs">
                 <div class="input-group-modern">
                     <input type="email" id="auth-email" required>
                     <label>Email Address</label>
@@ -30,8 +32,9 @@
                     <label>Password</label>
                     <div id="pass-strength" class="strength-meter"></div>
                 </div>
-                <button id="main-auth-btn" class="glass-button primary-btn">Login</button>
+                <button id="main-auth-btn" class="glass-button primary-btn">Login to Account</button>
             </div>
+
             <div class="divider"><span>OR CONTINUE WITH</span></div>
             <div class="social-login">
                 <button id="google-login-btn" class="social-btn">G</button>
@@ -41,54 +44,74 @@
     </div>
 
     <div id="chat-app" class="glass-chat-container" style="display: none;">
+        
+        <button id="menu-toggle" class="mobile-only-btn">☰ Menu</button>
+
         <aside class="glass-sidebar" id="sidebar">
-            <div class="glass-profile-header">
+            <div class="sidebar-header-row">
+                <h3>Chats</h3>
+                <button id="close-sidebar" class="mobile-only-btn">✕</button>
+            </div>
+
+            <div class="glass-profile-card">
                 <img src="" id="my-avatar">
                 <div class="user-info">
                     <b id="display-name">...</b>
                     <small id="my-unique-id">#----</small>
                 </div>
-                <button id="open-settings">⚙️</button>
-                <button id="logout-btn">✕</button>
+                <button id="open-settings" title="Settings">⚙️</button>
             </div>
+            
             <div class="search-box">
-                <input type="text" id="friend-id-input" placeholder="Search ID...">
+                <input type="text" id="friend-id-input" placeholder="Enter Friend ID...">
                 <button id="add-friend-btn">Add</button>
             </div>
-            <div class="contacts-label">MY FRIENDS</div>
-            <div id="friend-list" class="user-list"></div>
+
+            <div id="friend-list" class="user-list">
+                <p class="empty-list">No friends yet</p>
+            </div>
+
+            <button id="logout-btn" class="logout-footer">Logout</button>
         </aside>
 
-        <main class="chat-window" id="chat-window">
+        <main class="chat-window">
             <header id="chat-header">
-                <button id="mobile-back" class="mobile-only">←</button>
-                <span id="header-name">Select Friend</span>
+                <span id="header-name">Welcome to SmuChat</span>
             </header>
+            
             <div id="message-area" class="message-area"></div>
+            
             <div class="input-area">
                 <div class="input-wrapper">
-                    <button class="attach-btn">+</button>
-                    <input type="text" id="msg-input" placeholder="Type a message..." disabled>
-                    <button id="send-btn" class="send-btn-modern" disabled>
-                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-                    </button>
+                    <input type="text" id="msg-input" placeholder="Write a message..." disabled>
+                    <button id="send-btn" class="send-btn-modern" disabled>➤</button>
                 </div>
             </div>
         </main>
     </div>
 
-    <div id="settings-modal" class="modal"><div class="modal-content">
-        <h3>Edit Profile</h3>
-        <div class="input-group-modern"><input type="text" id="edit-name" required><label>Name</label></div>
-        <div class="input-group-modern"><input type="text" id="edit-photo" required><label>Avatar URL</label></div>
-        <div class="modal-actions"><button id="save-profile" class="glass-button primary-btn">Save</button><button id="close-modal" class="glass-button secondary">Cancel</button></div>
-    </div></div>
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <h3>Edit Profile</h3>
+            <div class="input-group-modern"><input type="text" id="edit-name" required><label>Name</label></div>
+            <div class="input-group-modern"><input type="text" id="edit-photo" required><label>Avatar URL</label></div>
+            <div class="modal-actions">
+                <button id="save-profile" class="glass-button primary-btn">Save Changes</button>
+                <button id="close-modal" class="glass-button secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
 
-    <div id="nickname-modal" class="modal"><div class="modal-content">
-        <h3>Set Nickname</h3>
-        <div class="input-group-modern"><input type="text" id="new-nickname" required><label>Nickname</label></div>
-        <div class="modal-actions"><button id="save-nickname" class="glass-button primary-btn">Set</button><button id="close-nick-modal" class="glass-button secondary">Cancel</button></div>
-    </div></div>
+    <div id="nickname-modal" class="modal">
+        <div class="modal-content">
+            <h3>Set Nickname</h3>
+            <div class="input-group-modern"><input type="text" id="new-nickname" required><label>Nickname</label></div>
+            <div class="modal-actions">
+                <button id="save-nickname" class="glass-button primary-btn">Update</button>
+                <button id="close-nick-modal" class="glass-button secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
 
     <script type="module" src="script.js"></script>
 </body>
