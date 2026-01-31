@@ -2,7 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebas
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInAnonymously, signOut } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
-const firebaseConfig = { apiKey: "YOUR_KEY", authDomain: "smuchat.firebaseapp.com", projectId: "smuchat", storageBucket: "smuchat.firebasestorage.app", messagingSenderId: "851151186986", appId: "1:851151186986:web:a8192113d1aa7c2b062753" };
+const firebaseConfig = { apiKey: "AIzaSyATEgv8QAqp8Nqnw3m8pjVBedZf7govrmc", authDomain: "smuchat.firebaseapp.com", projectId: "smuchat", storageBucket: "smuchat.firebasestorage.app", messagingSenderId: "851151186986", appId: "1:851151186986:web:a8192113d1aa7c2b062753" };
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
